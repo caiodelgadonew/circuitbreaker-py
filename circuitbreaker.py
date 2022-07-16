@@ -3,7 +3,6 @@ import logging
 import sys
 import requests
 from time import sleep
-from time import time
 
 
 log = logging.getLogger(__name__)
@@ -38,11 +37,13 @@ class CircuitBreaker():
         self.http_client = http_client
         self.error_threshold = error_threshold
         self.time_window = int(time_window)
-
         self.state = CircuitStates.CLOSED
-
         self._failure_count = 0 
         self._success_count = 0
+        if ACCEPT_CLIENT_ERRORS == True:
+            self.ERROR_LIMIT = 499
+        else:
+            self.ERROR_LIMIT = 399
 
     def set_state(self, state):
         previous_state = self.state
@@ -62,7 +63,7 @@ class CircuitBreaker():
 
         response = self.get_statuscode(HTTP_CLIENT)
        
-        if response in range(200, 499):
+        if response in range(200, self.ERROR_LIMIT):
             log.info("Remote Call Succeded")
             log.debug(f"Connection to {HTTP_CLIENT} returned status code {response}")
             self._failure_count = 0
@@ -79,7 +80,7 @@ class CircuitBreaker():
 
         try:
             response = self.get_statuscode(HTTP_CLIENT)
-            if response in range(200, 499):
+            if response in range(200, self.ERROR_LIMIT):
                 self.set_state(CircuitStates.HALF_OPEN)
                 self._success_count += 1
                 log.info(f"Remote Call has succeeded for {self._success_count} consecutive times.")
@@ -107,6 +108,7 @@ if __name__ == "__main__":
         HTTP_CLIENT = os.environ["HTTP_CLIENT"]
         ERROR_THRESHOLD = os.getenv("ERROR_THRESHOLD", 3)
         TIME_WINDOW = os.getenv("TIME_WINDOW", 10)
+        ACCEPT_CLIENT_ERRORS = os.getenv("ACCEPT_CLIENT_ERRORS", False)
         
     except KeyError as e:
         log.error(f"The Environment Variable {e} is not set")
