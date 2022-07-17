@@ -10,7 +10,7 @@ logging.basicConfig(
     stream=sys.stdout,
     level=os.getenv("LOG_LEVEL", "INFO"),
     format="%(asctime)s %(levelname).4s %(name)s: \
-                            %(message)s",
+        %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
@@ -34,7 +34,7 @@ class CircuitBreaker:
         """
 
         self.http_client = http_client
-        self.error_threshold = error_threshold
+        self.error_threshold = int(error_threshold)
         self.time_window = int(time_window)
         self.state = CircuitStates.CLOSED
         self._failure_count = 0
@@ -73,7 +73,7 @@ class CircuitBreaker:
             log.debug(f"Connection to {HTTP_CLIENT} returned status code {response}")
             self._failure_count += 1
             log.error(
-                f"Circuit Open Error - Remote Call has failed for {self._failure_count} consecutive times."
+                f"CircuitOpenError - Remote Call has failed for {self._failure_count} consecutive times."
             )
             if self._failure_count >= self.error_threshold:
                 self.set_state(CircuitStates.OPEN)
@@ -95,7 +95,7 @@ class CircuitBreaker:
             else:
                 self._failure_count += 1
                 log.error(
-                    f"Circuit Open Error - Remote Call has failed for {self._failure_count} consecutive times."
+                    f"CircuitOpenError - Remote Call has failed for {self._failure_count} consecutive times."
                 )
                 self.set_state(CircuitStates.OPEN)
                 return response
