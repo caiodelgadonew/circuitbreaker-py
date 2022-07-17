@@ -19,9 +19,6 @@ class CircuitStates:
     CLOSED = "closed"
     HALF_OPEN = "half_open"
 
-class CircuitOpenError(Exception):
-    pass
-
 class CircuitBreaker():
     def __init__(self, http_client, error_threshold, time_window):
         """
@@ -40,6 +37,7 @@ class CircuitBreaker():
         self.state = CircuitStates.CLOSED
         self._failure_count = 0 
         self._success_count = 0
+
         if ACCEPT_CLIENT_ERRORS == True:
             self.ERROR_LIMIT = 499
         else:
@@ -72,7 +70,7 @@ class CircuitBreaker():
         else:
             log.debug(f"Connection to {HTTP_CLIENT} returned status code {response}")
             self._failure_count += 1
-            log.info(f"Remote Call has failed for {self._failure_count} consecutive times.")
+            log.error(f"Circuit Open Error - Remote Call has failed for {self._failure_count} consecutive times.")
             if self._failure_count >= self.error_threshold:
                 self.set_state(CircuitStates.OPEN)
 
@@ -90,13 +88,13 @@ class CircuitBreaker():
                     return response 
             else:
                 self._failure_count += 1
-                log.info(f"Remote Call has failed for {self._failure_count} consecutive times.")
+                log.error(f"Circuit Open Error - Remote Call has failed for {self._failure_count} consecutive times.")
                 self.set_state(CircuitStates.OPEN)
                 return response
         except Exception as e: 
             log.error(e)
 
-    def do_request(self, url, *args, **kwargs):
+    def do_request(self, *args, **kwargs):
         if self.state == CircuitStates.CLOSED:
             return self.closed_state(*args, **kwargs)
         else:
